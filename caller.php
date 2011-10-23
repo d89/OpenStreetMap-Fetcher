@@ -9,7 +9,7 @@ $request = array
 );
 
 echo "<h1>Request</h1>";
-$url = "http://" . $_SERVER['HTTP_HOST'] . "/freetime/?" . urldecode(http_build_query($request));
+$url = "http://" . $_SERVER['HTTP_HOST'] . "/?" . urldecode(http_build_query($request));
 echo $url;
 
 echo "<h1>Response</h1>";
