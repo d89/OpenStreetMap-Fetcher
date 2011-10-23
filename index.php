@@ -1,4 +1,6 @@
 <?php
+header('content-type: text/html; charset=utf-8');
+
 class Freetime
 {
     private $response = array
@@ -7,7 +9,11 @@ class Freetime
         "status_code" => false
     );    
     
-    const radius = 50; //50km
+    const radius = 10; //km
+    
+    const max_locations = 30;
+    
+    private $response_was_sent = false;
     
     private $categories = array
     (
@@ -82,56 +88,30 @@ class Freetime
     private function query_osm(array $bbox, array $amenities)
     {
         //long left,lat top,long right,lat bottom
-        $bbox_string = implode(",", array($bbox['nw']['long'], $bbox['nw']['lat'], $bbox['se']['long'], $bbox['se']['lat']));
+        $bbox_string = implode(",", array($bbox['sw']['long'], $bbox['sw']['lat'], $bbox['ne']['long'], $bbox['ne']['lat']));
         $amenity_string = implode("|", $amenities);
         $url = sprintf("http://www.overpass-api.de/api/xapi?node[bbox=%s][amenity=%s][@meta]", $bbox_string, $amenity_string);
+        
+        //$this->send_response($url);
         
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.2) Gecko/20090729 Firefox/3.5.2 GTB5');
-        curl_setopt($ch, CURLOPT_TIMEOUT, 5); 
-        
+        curl_setopt($ch, CURLOPT_TIMEOUT, 15); 
         $content = curl_exec($ch);
+        
+        if (curl_getinfo($ch, CURLINFO_HTTP_CODE) != 200)
+             throw new OSMResponseError("The OSM Response request was invalid");  
+        
         curl_close($ch);
+            
         return $content;
     }
     
-    private function process_result($result)
+    private function process_result($result, array $lat_long)
     {
         if (empty($result))
             throw new OSMResponseError("The OSM Response was empty");
-
-        /*
-        dummy:
-        $result = '<osm version="0.6" generator="Overpass API">
-        <note>The data included in this document is from www.openstreetmap.org. It has there been collected by a large group of contributors. For individual attribution of each item please refer to http://www.openstreetmap.org/api/0.6/[node|way|relation]/#id/history </note>
-        <meta osm_base="2011-10-17T16\:36\:02Z"/>
-          <node id="24924135" lat="49.8800621" lon="8.6453454" version="11" timestamp="2011-06-13T19:02:36Z" changeset="8424331" uid="290680" user="wheelmap_visitor">
-            <tag k="addr:city" v="Darmstadt"/>
-            <tag k="addr:housenumber" v="41"/>
-            <tag k="addr:postcode" v="64293"/>
-            <tag k="addr:street" v="Kahlertstraße"/>
-            <tag k="amenity" v="pub"/>
-            <tag k="name" v="Kneipe 41"/>
-            <tag k="note" v="DaLUG Meeting (4st Friday of month 19:30)"/>
-            <tag k="smoking" v="no"/>
-            <tag k="website" v="http://www.kneipe41.de/"/>
-            <tag k="wheelchair" v="limited"/>
-          </node>
-          <node id="203582455" lat="49.8716253" lon="8.6393520" version="5" timestamp="2011-06-13T19:04:38Z" changeset="8424331" uid="290680" user="wheelmap_visitor">
-            <tag k="addr:city" v="Darmstadt"/>
-            <tag k="addr:country" v="DE"/>
-            <tag k="addr:housenumber" v="69"/>
-            <tag k="addr:postcode" v="64295"/>
-            <tag k="addr:street" v="Rheinstraße"/>
-            <tag k="amenity" v="fast_food"/>
-            <tag k="cuisine" v="burger"/>
-            <tag k="name" v="McDonalds"/>
-            <tag k="website" v="http://www.mcdonalds.com/"/>
-            <tag k="wheelchair" v="yes"/>
-          </node>
-        </osm>';
-        */
         
         //dont output the errors
         libxml_use_internal_errors(true);
@@ -157,18 +137,25 @@ class Freetime
             'website' => 'website',
             'wheelchair' => 'wheelchair',
             'addr:country' => 'country',
-            'cuisine' => 'cuisine'
+            'cuisine' => 'cuisine',
+            'opening_hours' => 'opening_hours',
+            'phone' => 'phone'
         );
 
         $locations = array();
 
         foreach ($resp->node as $n)
         {
+            $lat = floatval($n->attributes()->lat);
+            $long = floatval($n->attributes()->lon);
+            $dist = $this->calc_dist($lat, $lat_long['lat'], $long, $lat_long['long']);
+            
             $location = array
             (
                 "id" => intval($n->attributes()->id),
-                "lat" => floatval($n->attributes()->lat),
-                "long" => floatval($n->attributes()->lon),
+                "lat" => $lat,
+                "long" => $long,
+                "dist" => $dist,
                 'additional' => array()
             );
 
@@ -186,20 +173,37 @@ class Freetime
                     $location['additional'][$key] = $val;
             }
 
-            $locations[] = $location;
+            //prevent overwriting when we sort after key
+            $dist_key = "$dist" . rand(0, time());
+            $locations[$dist_key] = $location;
         }
         
-        return $locations;
+        ksort($locations);
+        
+        if (count($locations) > self::max_locations)
+            array_splice($locations, self::max_locations);
+        
+        return array_values($locations);
+    }
+    
+    private function calc_dist($lat1, $lat2, $long1, $long2)
+    {
+        return acos(sin(deg2rad($lat1))*sin(deg2rad($lat2))+cos(deg2rad($lat1))*cos(deg2rad($lat2))*cos(deg2rad($long2-$long1)))*6371;
     }
     
     private function send_response($message = null, $status_code = null)
     {
+        if ($this->response_was_sent) 
+            return;
+        
         if (!is_null($status_code))
             $this->response['status_code'] = $status_code;
         
         if (!is_null($message))
             $this->response['message'] = $message;
 
+        $this->response_was_sent = true;
+        
         die(json_encode($this->response));
     }   
     
@@ -213,7 +217,7 @@ class Freetime
             $bounding_box = $this->calculate_bounding_box($lat_long['lat'], $lat_long['long']);
             $amenities = $this->get_amenities();
             $result = $this->query_osm($bounding_box, $amenities);
-            $processed = $this->process_result($result);
+            $processed = $this->process_result($result, $lat_long);
             $this->send_response($processed, true);
         }
         catch (Exception $ex)
@@ -230,4 +234,5 @@ class InvalidGeoPosition extends Exception {};
 class OSMResponseError extends Exception {};
 
 error_reporting(0);
+       
 new Freetime();

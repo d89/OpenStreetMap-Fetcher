@@ -1,4 +1,5 @@
 <?php
+header('content-type: text/html; charset=utf-8');
 
 $request = array
 (
@@ -8,7 +9,7 @@ $request = array
 );
 
 echo "<h1>Request</h1>";
-$url = "http://localhost/freetime/?" . http_build_query($request);
+$url = "http://" . $_SERVER['HTTP_HOST'] . "/freetime/?" . urldecode(http_build_query($request));
 echo $url;
 
 echo "<h1>Response</h1>";
