@@ -135,11 +135,13 @@ class Freetime
             'note' => 'info',
             'smoking' => 'smoking',
             'website' => 'website',
+			'contact:website' => 'website',
             'wheelchair' => 'wheelchair',
             'addr:country' => 'country',
             'cuisine' => 'cuisine',
             'opening_hours' => 'opening_hours',
-            'phone' => 'phone'
+            'phone' => 'phone',
+			'contact:phone' => 'phone'
         );
 
         $locations = array();
@@ -159,7 +161,7 @@ class Freetime
                 'additional' => array()
             );
 
-            foreach ($tag_mapping as $tag)
+            foreach (array_unique(array_values($tag_mapping)) as $tag)
                 $location[$tag] = null;
 
             foreach ($n->tag as $t)
@@ -173,6 +175,10 @@ class Freetime
                     $location['additional'][$key] = $val;
             }
 
+            //locations without name are worthless for us
+            if (is_null($location['name']))
+                continue;
+            
             //prevent overwriting when we sort after key
             $dist_key = "$dist" . rand(0, time());
             $locations[$dist_key] = $location;

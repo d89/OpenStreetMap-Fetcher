@@ -9,7 +9,9 @@ $request = array
 );
 
 echo "<h1>Request</h1>";
-$url = "http://" . $_SERVER['HTTP_HOST'] . "/?" . urldecode(http_build_query($request));
+$server = $_SERVER['HTTP_HOST'];
+$is_live = $server == "localhost";
+$url = "http://" . $server . ($is_live ? "/freetime/" : "/") . "?" . urldecode(http_build_query($request));
 echo $url;
 
 echo "<h1>Response</h1>";
