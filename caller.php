@@ -5,7 +5,9 @@ $request = array
 (
     "lat" => 49.870618,
     "long" => 8.641756,
-    "action" => "food,party"
+    "action" => "food,party",
+    "userid" => sha1(""),
+    "totaltime" => 201
 );
 
 echo "<h1>Request</h1>";
@@ -17,5 +19,11 @@ echo $url;
 echo "<h1>Response</h1>";
 $result = file_get_contents($url);
 echo "<pre>";
-print_r(json_decode($result, true));
+$res = json_decode($result, true);
+
+if (count($res))
+    print_r($res);
+else
+    print "Error: " . $result;
+
 echo "</pre>";
