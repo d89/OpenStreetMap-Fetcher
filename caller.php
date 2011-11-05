@@ -5,7 +5,7 @@ $request = array
 (
     "lat" => 49.870618,
     "long" => 8.641756,
-    "action" => "food,party",
+    "action" => "food,party,sport",
     "userid" => sha1(""),
     "totaltime" => 201
 );

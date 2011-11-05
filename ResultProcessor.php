@@ -8,72 +8,98 @@ class ResultProcessor
 {
     const max_locations = 50;
     
-    const CATEGORY_FOOD = "food";
-    const CATEGORY_PARTY = "party";
+    const SECTION_FOOD = "food";
+    const SECTION_PARTY = "party";
+    const SECTION_SPORT = "sport";
     
-    public static function get_category_map()
+    public static function get_section_map()
     {
-        $category_map = array
+        $section_map = array
         (
+            //------------------------------------------------------------------
             "restaurant" => array
             (
-                "category" => self::CATEGORY_FOOD,
+                "section" => self::SECTION_FOOD,
                 "time" => 80,
+                "osm_key" => "amenity",
                 "max_amount" => 15,
+                "name_required" => true,
                 "can_visit" => function() { return date("G") > 8 || date("G") < 2; }
             ),
             "fast_food" => array
             (
-                "category" => self::CATEGORY_FOOD,
+                "section" => self::SECTION_FOOD,
                 "time" => 30,
+                "osm_key" => "amenity",
                 "max_amount" => 25,
+                "name_required" => true,
                 "can_visit" => function() { return true; }
             ),
+            //------------------------------------------------------------------
             "pub" => array
             (
-                "category" => self::CATEGORY_PARTY,
+                "section" => self::SECTION_PARTY,
                 "time" => 80,
+                "osm_key" => "amenity",
                 "max_amount" => 30,
+                "name_required" => true,
                 "can_visit" => function() { return date("G") >= 15 || date("G") < 4; }
             ), 
             "nightclub"  => array
             (
-                "category" => self::CATEGORY_PARTY,
+                "section" => self::SECTION_PARTY,
                 "time" => 200,
+                "osm_key" => "amenity",
                 "max_amount" => 15,
+                "name_required" => true,
                 "can_visit" => function() { return date("G") > 22 || date("G") < 6; }
+            ),
+            //------------------------------------------------------------------
+            "soccer"  => array
+            (
+                "section" => self::SECTION_SPORT,
+                "time" => 50,
+                "osm_key" => "sport",
+                "max_amount" => 3,
+                "name_required" => false,
+                "can_visit" => function() { return date("G") < 22 && date("G") > 7; }
+            ),
+            "table_tennis"  => array
+            (
+                "section" => self::SECTION_SPORT,
+                "time" => 30,
+                "osm_key" => "sport",
+                "max_amount" => 7,
+                "name_required" => false,
+                "can_visit" => function() { return date("G") < 22 && date("G") > 7; }
+            ),
+            "basketball"  => array
+            (
+                "section" => self::SECTION_SPORT,
+                "time" => 40,
+                "osm_key" => "sport",
+                "max_amount" => 5,
+                "name_required" => false,
+                "can_visit" => function() { return date("G") < 22 && date("G") > 7; }
+            ),
+            "cycling"  => array
+            (
+                "section" => self::SECTION_SPORT,
+                "time" => 90,
+                "osm_key" => "sport",
+                "max_amount" => 5,
+                "name_required" => false,
+                "can_visit" => function() { return date("G") < 22 && date("G") > 7; }
             )
         );
                 
-        return $category_map;
+        return $section_map;
     }
         
     private static function calc_dist($lat1, $lat2, $long1, $long2)
     {
         return acos(sin(deg2rad($lat1))*sin(deg2rad($lat2))+cos(deg2rad($lat1))*cos(deg2rad($lat2))*cos(deg2rad($long2-$long1)))*6371;
     }
-    
-    public static function get_amenities_from_categories(array $categories, $totaltime)
-    {
-        $amenities = array();
-        $category_map = self::get_category_map();
-        
-        foreach ($categories as $c)
-        {
-            foreach ($category_map as $amenity => $item)
-            {
-                if ($item['category'] == $c && $item["can_visit"]())
-                {
-                    if ($totaltime && $item["time"] > $totaltime)
-                        continue;
-                    
-                    $amenities[] = $amenity;
-                }
-            }
-        }
-        
-        return array_unique($amenities);
-    }         
     
     public static function process_result($userid, $result, array $lat_long)
     {
@@ -97,7 +123,6 @@ class ResultProcessor
             'addr:housenumber' => 'number',
             'addr:postcode' => 'zip',
             'addr:street' => 'street',
-            'amenity' => 'amenity',
             'name' => 'name',
             'note' => 'info',
             'smoking' => 'smoking',
@@ -117,7 +142,7 @@ class ResultProcessor
         if ($userid)
             $ratings = Rating::get_ratings_for_user($userid);
         
-        $category_map = self::get_category_map();
+        $section_map = self::get_section_map();
         
         $locations = array();
 
@@ -134,7 +159,9 @@ class ResultProcessor
                 "long" => $long,
                 "dist" => $dist,
                 'additional' => array(),
-                "preselect" => false
+                "preselect" => false,
+                "section" => null, //e.g. food
+                "place" => null //e.g. restaurant
             );
             
             $order_key = $dist;
@@ -154,37 +181,70 @@ class ResultProcessor
             foreach (array_unique(array_values($tag_mapping)) as $tag)
                 $location[$tag] = null;
 
+            $location_is_assigned = false;
+            
             foreach ($n->tag as $t)
             {
-                $key = strtolower(trim($t->attributes()->k));
-                $val = (string)$t->attributes()->v;
+                $key = strtolower(trim($t->attributes()->k)); //e.g. amenity or cuisine
+                $val = (string)$t->attributes()->v; //e.g. restaurant or greek
 
+                $continue = false;
+                
+                if (!$location_is_assigned)
+                {
+                    //check if element is contained within the section map
+                    foreach ($section_map as $place => $details)
+                    {
+                        if ($key == $details['osm_key'] && $val == $place)
+                        {
+                            $location['section'] = $section_map[$val]['section']; //e.g. food
+                            $location['place'] = $val; //e.g. restaurant
+                            $location_is_assigned = true;
+                            $continue = true;
+                            break;
+                        }
+                    }
+                }
+                
+                //skip adding to original, if it was the section (amenity, ...)
+                if ($continue)
+                    continue;
+                
                 if (isset($tag_mapping[$key]))
                     $location[$tag_mapping[$key]] = $val;
                 else
                     $location['additional'][$key] = $val;
             }
-
-            //locations without name AND (valid) amenity are worthless for us
-            if (empty($location['name']) || empty($location['amenity']) || !isset($category_map[$location['amenity']]))
+            
+            //still no section / place: skip!
+            if (empty($location['section']) || empty($location['place']))
                 continue;
             
-            $location['time'] = $category_map[$location['amenity']]['time'];
+            $place = $location['place']; //e.g. restaurant
+            
+            //if the name is not required and we don't have one, take the place ("table_tennis")
+            if (empty($location['name']) && !$section_map[$place]['name_required'])
+                $location['name'] = $place;
+
+            //no name? worthless for us
+            if (empty($location['name']))
+                continue;
+            
+            $location['time'] = $section_map[$place]['time'];
             
             //prevent overwriting when we sort after key
             $order_key = "$order_key" . $location['id'];
-            $amenity = $location['amenity'];
-            $locations[$amenity][$order_key] = $location;
+            $locations[$place][$order_key] = $location;
         }
         
         $all_items = array();
         
-        foreach ($locations as $amenity => &$items)
+        foreach ($locations as $place => &$items)
         {
             ksort($items);
             
-            if (count($items) > $category_map[$amenity]['max_amount'])
-                array_splice($items, $category_map[$amenity]['max_amount']);
+            if (count($items) > $section_map[$place]['max_amount'])
+                array_splice($items, $section_map[$place]['max_amount']);
             
             foreach ($items as $k => $item)
                 $all_items[$k] = $item;

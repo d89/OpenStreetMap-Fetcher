@@ -25,22 +25,7 @@ class Freetime
             $this->send_response("Internal Error: " . $error['message'], false);
         }
     }
-
-    private function get_amenities($totaltime)
-    {
-        //sanitize amenities
-        if (!isset($_GET['action']) || empty($_GET['action']))
-            throw new NoAmenitiesException("No Amenities provided");
-
-        $categories = explode(",", strtolower(trim($_GET['action'])));
-        $amenities = ResultProcessor::get_amenities_from_categories($categories, $totaltime);
         
-        if (!count($amenities))
-            throw new NoAmenitiesException("No Amenities provided");
-        
-        return $amenities;
-    }
-    
     private function get_user_id()
     {
         if (isset($_GET['userid']) && strlen(trim($_GET['userid'])) == 40)
@@ -90,27 +75,24 @@ class Freetime
             "se" => array("lat" => $minLat, "long" => $maxLon)
         );
     }
-    
-    private function query_osm(array $bbox, array $amenities)
+
+    private function query_osm($xml)
     {
-        //long left,lat top,long right,lat bottom
-        $bbox_string = implode(",", array($bbox['sw']['long'], $bbox['sw']['lat'], $bbox['ne']['long'], $bbox['ne']['lat']));
-        $amenity_string = implode("|", $amenities);
-        $url = sprintf("http://www.overpass-api.de/api/xapi?node[bbox=%s][amenity=%s]", $bbox_string, $amenity_string);
+        //$this->send_response(htmlentities($xml, ENT_COMPAT, "UTF-8"));
         
-        //$this->send_response($url);
-        
-        $ch = curl_init($url);
+        //see http://www.overpass-api.de/query_form.html
+        $ch = curl_init("http://www.overpass-api.de/api/interpreter");
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.2) Gecko/20090729 Firefox/3.5.2 GTB5');
-        curl_setopt($ch, CURLOPT_TIMEOUT, 15); 
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30); 
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $xml);
         $content = curl_exec($ch);
-        
+
         if (curl_getinfo($ch, CURLINFO_HTTP_CODE) != 200)
              throw new OSMResponseError("The OSM Response request was invalid");  
         
         curl_close($ch);
-            
+        
         return $content;
     }
     
@@ -130,6 +112,54 @@ class Freetime
         die(json_encode($this->response));
     }   
     
+    private function get_query_params($totaltime)
+    {
+        //sanitize sections
+        if (!isset($_GET['action']) || empty($_GET['action']))
+            throw new NoCategoriesException("No Keys provided");
+
+        $sections = explode(",", strtolower(trim($_GET['action'])));
+
+        $queryparams = array();
+        $section_map = ResultProcessor::get_section_map();
+        
+        foreach ($sections as $s)
+        {
+            foreach ($section_map as $place => $item)
+            {
+                if ($item['section'] == $s && $item["can_visit"]())
+                {
+                    if ($totaltime && $item["time"] > $totaltime)
+                        continue;
+                    
+                    $queryparams[$item['osm_key']][] = $place;
+                }
+            }
+        }
+        
+        if (!count($queryparams))
+            throw new NoSectionsException("No Keys found for querying");
+ 
+        return $queryparams;
+    }     
+    
+    private function create_request_xml(array $bbox, array $queryparams)
+    {
+        $xml = '<union>%s</union><print mode="body"/>';
+        $bbox_string = '<bbox-query s="' . $bbox['sw']['lat'] . '" n="' . $bbox['ne']['lat'] . '" w="' . $bbox['sw']['long'] . '" e="' . $bbox['ne']['long'] . '"/>';
+        $query = '<query type="node">' . $bbox_string . '<has-kv k="%s" v="%s"/></query>';
+
+        $querynodes = array();
+
+        foreach ($queryparams as $key => $values)
+        {
+            foreach ($values as $value)
+                $querynodes[] = sprintf($query, $key, $value);
+        }
+
+        return sprintf($xml, implode("\n", $querynodes));
+    }
+    
     public function __construct()
     {
         register_shutdown_function(array($this, 'shutdown_function'));
@@ -140,8 +170,9 @@ class Freetime
             $totaltime = $this->get_total_time();
             $lat_long = $this->get_geo_position();
             $bounding_box = $this->calculate_bounding_box($lat_long['lat'], $lat_long['long']);
-            $amenities = $this->get_amenities($totaltime);
-            $result = $this->query_osm($bounding_box, $amenities);
+            $queryparams = $this->get_query_params($totaltime);
+            $request_xml = $this->create_request_xml($bounding_box, $queryparams);
+            $result = $this->query_osm($request_xml);
             $processed = ResultProcessor::process_result($userid, $result, $lat_long);
             $this->send_response($processed, true);
         }
