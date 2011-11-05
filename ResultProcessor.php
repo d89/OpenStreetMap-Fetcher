@@ -26,7 +26,7 @@ class ResultProcessor
             (
                 "category" => self::CATEGORY_FOOD,
                 "time" => 30,
-                "amount" => 25,
+                "max_amount" => 25,
                 "can_visit" => function() { return true; }
             ),
             "pub" => array
@@ -34,7 +34,7 @@ class ResultProcessor
                 "category" => self::CATEGORY_PARTY,
                 "time" => 80,
                 "max_amount" => 30,
-                "can_visit" => function() { return date("G") > 15 || date("G") < 4; }
+                "can_visit" => function() { return date("G") >= 15 || date("G") < 4; }
             ), 
             "nightclub"  => array
             (
@@ -102,13 +102,13 @@ class ResultProcessor
             'note' => 'info',
             'smoking' => 'smoking',
             'website' => 'website',
-			'contact:website' => 'website',
+            'contact:website' => 'website',
             'wheelchair' => 'wheelchair',
             'addr:country' => 'country',
             'cuisine' => 'cuisine',
             'opening_hours' => 'opening_hours',
             'phone' => 'phone',
-			'contact:phone' => 'phone'
+            'contact:phone' => 'phone'
         );
         
         //get the ratings
@@ -133,7 +133,8 @@ class ResultProcessor
                 "lat" => $lat,
                 "long" => $long,
                 "dist" => $dist,
-                'additional' => array()
+                'additional' => array(),
+                "preselect" => false
             );
             
             $order_key = $dist;
@@ -168,6 +169,8 @@ class ResultProcessor
             if (empty($location['name']) || empty($location['amenity']) || !isset($category_map[$location['amenity']]))
                 continue;
             
+            $location['time'] = $category_map[$location['amenity']]['time'];
+            
             //prevent overwriting when we sort after key
             $order_key = "$order_key" . $location['id'];
             $amenity = $location['amenity'];
@@ -191,6 +194,17 @@ class ResultProcessor
         
         if (count($all_items) > self::max_locations)
             array_splice($all_items, self::max_locations);
+        
+        //perform preselect: dummy implementation
+        $max_preselect_items = 5;
+        
+        foreach ($all_items as &$location)
+        {
+            if ($max_preselect_items-- == 0)
+                break;
+            
+            $location['preselect'] = true;
+        }
         
         return array_values($all_items);
     }

@@ -96,7 +96,7 @@ class Freetime
         //long left,lat top,long right,lat bottom
         $bbox_string = implode(",", array($bbox['sw']['long'], $bbox['sw']['lat'], $bbox['ne']['long'], $bbox['ne']['lat']));
         $amenity_string = implode("|", $amenities);
-        $url = sprintf("http://www.overpass-api.de/api/xapi?node[bbox=%s][amenity=%s][@meta]", $bbox_string, $amenity_string);
+        $url = sprintf("http://www.overpass-api.de/api/xapi?node[bbox=%s][amenity=%s]", $bbox_string, $amenity_string);
         
         //$this->send_response($url);
         
