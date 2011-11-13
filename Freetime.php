@@ -1,6 +1,6 @@
 <?php
 header('content-type: text/html; charset=utf-8');
-error_reporting(0);
+require_once "config.php";
 require_once "Rating.php";
 require_once "ResultProcessor.php";
 require_once "Exceptions.php";
@@ -112,22 +112,27 @@ class Freetime
         die(json_encode($this->response));
     }   
     
-    private function get_query_params($totaltime)
+    private function get_request_sections()
     {
         //sanitize sections
         if (!isset($_GET['action']) || empty($_GET['action']))
             throw new NoCategoriesException("No Keys provided");
 
         $sections = explode(",", strtolower(trim($_GET['action'])));
-
+        
+        return $sections;
+    }
+    
+    private function get_query_params($totaltime, array $request_sections)
+    {
         $queryparams = array();
         $section_map = ResultProcessor::get_section_map();
         
-        foreach ($sections as $s)
+        foreach ($request_sections as $s)
         {
             foreach ($section_map as $place => $item)
             {
-                if ($item['section'] == $s && $item["can_visit"]())
+                if (in_array($s, $item['section']) && $item["can_visit"]())
                 {
                     if ($totaltime && $item["time"] > $totaltime)
                         continue;
@@ -139,7 +144,7 @@ class Freetime
         
         if (!count($queryparams))
             throw new NoSectionsException("No Keys found for querying");
- 
+        
         return $queryparams;
     }     
     
@@ -170,10 +175,11 @@ class Freetime
             $totaltime = $this->get_total_time();
             $lat_long = $this->get_geo_position();
             $bounding_box = $this->calculate_bounding_box($lat_long['lat'], $lat_long['long']);
-            $queryparams = $this->get_query_params($totaltime);
+            $request_sections = $this->get_request_sections();
+            $queryparams = $this->get_query_params($totaltime, $request_sections);
             $request_xml = $this->create_request_xml($bounding_box, $queryparams);
             $result = $this->query_osm($request_xml);
-            $processed = ResultProcessor::process_result($userid, $result, $lat_long);
+            $processed = ResultProcessor::process_result($userid, $result, $lat_long, $request_sections, $totaltime);
             $this->send_response($processed, true);
         }
         catch (Exception $ex)

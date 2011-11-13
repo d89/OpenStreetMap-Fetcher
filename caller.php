@@ -1,12 +1,16 @@
 <?php
 header('content-type: text/html; charset=utf-8');
 
+$sections = array("party", "fun", "sport", "sightseeing", "date", "einkaufen", "mahlzeit", "kultur");
+shuffle($sections);
+array_splice($sections, rand(1, count($sections) - 1));
+
 $request = array
 (
     "lat" => 49.870618,
     "long" => 8.641756,
-    "action" => "food,party,sport",
-    "userid" => sha1(""),
+    "action" => implode(",", $sections),
+    "userid" => md5(""),
     "totaltime" => 201
 );
 

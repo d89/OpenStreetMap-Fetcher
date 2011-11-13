@@ -1,6 +1,6 @@
 <?php
 header('content-type: text/html; charset=utf-8');
-error_reporting(0);
+require_once "config.php";
 require_once "Exceptions.php";
 
 class Rating
@@ -69,7 +69,7 @@ class Rating
     private function enter_rating($db, $userid = null, $placeid = "", $rating = null)
     {
         $userid = trim($userid);
-        if (strlen($userid) !== 40)
+        if (strlen($userid) !== 32)
             throw new Exception("Invalid User-ID");
         
         $placeid = intval($placeid);
