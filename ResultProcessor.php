@@ -14,10 +14,10 @@ class ResultProcessor
     const SECTION_FUN = "fun";
     const SECTION_SPORT = "sport";
     const SECTION_SIGHTSEEING = "sightseeing";
-	const SECTION_DATE = "date";
-	const SECTION_EINKAUFEN = "einkaufen";
-	const SECTION_MAHLZEIT = "mahlzeit";
-	const SECTION_KULTUR = "kultur";
+    const SECTION_DATE = "date";
+    const SECTION_EINKAUFEN = "einkaufen";
+    const SECTION_MAHLZEIT = "mahlzeit";
+    const SECTION_KULTUR = "kultur";
 	//const SECTION_RANDOM = "random";
 	
     public static function get_section_map()
@@ -66,7 +66,7 @@ class ResultProcessor
                 'section' => array(self::SECTION_PARTY),
                 "time" => 15,
                 "osm_key" => "amenity",
-                "max_amount" => 3,
+                "max_amount" => 2,
                 "name_required" => false,
                 "can_visit" => function() { return true; }
             ),			
@@ -439,7 +439,7 @@ class ResultProcessor
                 'section' => array(self::SECTION_DATE),
                 "time" => 30,
                 "osm_key" => "amenity",
-                "max_amount" => 4,
+                "max_amount" => 2,
                 "name_required" => false,
                 "can_visit" => function() { return true; }
             ),
@@ -821,23 +821,26 @@ class ResultProcessor
         
         //perform preselect
         $used_time = 0;
-        $max_time = $totaltime + $totaltime * (self::time_overdraw_percent / 100);
         
         //special array for all preselected items
         $preselected = array();
-        
-        foreach ($all_items as $prio => $item)
+                
+        //totaltime is optional
+        if ($totaltime)
         {
-            if ($used_time + $item['time'] >= $max_time)
-                continue;
+            foreach ($all_items as $prio => $item)
+            {
+                if ($used_time + $item['time'] >= $max_time)
+                    continue;
 
-            $item['preselect'] = true;
-            $used_time += $item['time'];
-            
-            $preselected[$prio] = $item;
-            unset($all_items[$prio]);
+                $item['preselect'] = true;
+                $used_time += $item['time'];
+
+                $preselected[$prio] = $item;
+                unset($all_items[$prio]);
+            }
         }
-        
+       
         //prepend the preselections to the array with the remaining items
         return array_values(array_merge($preselected, $all_items));
     }
