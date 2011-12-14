@@ -3,13 +3,12 @@ header('content-type: text/html; charset=utf-8');
 require_once "config.php";
 require_once "Rating.php";
 require_once "ResultProcessor.php";
-require_once "Exceptions.php";
 
 class Freetime
 {
     private $response = array
     (
-        "message" => "Request could not be processed", 
+        "message" => "Die Anfrage konnte nicht verarbeitet werden", 
         "status_code" => false
     );    
     
@@ -22,13 +21,13 @@ class Freetime
         $error = error_get_last();
         if ($error)
         {
-            $this->send_response("Internal Error: " . $error['message'], false);
+            $this->send_response("Interner Fehler: " . $error['message'], false);
         }
     }
         
     private function get_user_id()
     {
-        if (isset($_GET['userid']) && strlen(trim($_GET['userid'])) == 40)
+        if (isset($_GET['userid']) && strlen(trim($_GET['userid'])) == 32)
             return trim($_GET['userid']);
         
         return false;
@@ -49,11 +48,11 @@ class Freetime
         
         $lat = floatval($_GET['lat']);
         if ($lat < -90 || $lat > 90)
-            throw new InvalidGeoPosition("Invalid Latitude. Only values between -90 and 90 are applicable");
+            throw new InvalidGeoPosition("Ungueltiger Wert fuer den Breitengrad.");
             
         $long = floatval($_GET['long']);
         if ($long < -180 || $long > 1800)
-            throw new InvalidGeoPosition("Invalid Longitude. Only values between -180 and 180 are applicable");
+            throw new InvalidGeoPosition("Ungueltiger Wert fuer den Laengengrad.");
         
         return array("lat" => $lat, "long" => $long);
     }
@@ -89,14 +88,14 @@ class Freetime
         $content = curl_exec($ch);
 
         if (curl_getinfo($ch, CURLINFO_HTTP_CODE) != 200)
-             throw new OSMResponseError("The OSM Response request was invalid");  
+             throw new OSMResponseError("Interner Fehler: Die API-Antwort ist invalid.");  
         
         curl_close($ch);
         
         return $content;
     }
     
-    private function send_response($message = null, $status_code = null)
+    private function send_response($message = null, $status_code = null, $requestkey = false)
     {
         if ($this->response_was_sent) 
             return;
@@ -109,6 +108,14 @@ class Freetime
 
         $this->response_was_sent = true;
         
+        if ($requestkey)
+        {
+            $db = DB::get();
+            $stmnt = $db->prepare('UPDATE `history` SET successfull = ?, message = ? WHERE requestkey = ?');
+            $vals = array(intval($status_code), print_r($message, true), $requestkey);
+            $res = $stmnt->execute($vals);
+        }
+        
         die(json_encode($this->response));
     }   
     
@@ -116,7 +123,7 @@ class Freetime
     {
         //sanitize sections
         if (!isset($_GET['action']) || empty($_GET['action']))
-            throw new NoCategoriesException("No Keys provided");
+            throw new NoCategoriesException("Es wurden keine Kategorien angegeben.");
 
         $sections = explode(",", strtolower(trim($_GET['action'])));
         
@@ -143,7 +150,7 @@ class Freetime
         }
         
         if (!count($queryparams))
-            throw new NoSectionsException("No Keys found for querying");
+            throw new NoSectionsException("Es konnten keine Ergebnisse geliefert geliefert werden, da Ihre angegebene Zeit zu kurz ist.");
         
         return $queryparams;
     }     
@@ -165,9 +172,19 @@ class Freetime
         return sprintf($xml, implode("\n", $querynodes));
     }
     
+    public function log_request($request_key, $userid, $action, $lat, $long, $totaltime)
+    {
+        $db = DB::get();
+        $stmnt = $db->prepare('INSERT INTO `history` (userid, action, lat, `long`, totaltime, `time`, requestkey) VALUES (?, ?, ?, ?, ?, ?, ?)');
+        $vals = array($userid, implode(",", $action), $lat, $long, $totaltime, date("Y-m-d H:i:s"), $request_key);
+        $res = $stmnt->execute($vals);
+    }
+    
     public function __construct()
     {
         register_shutdown_function(array($this, 'shutdown_function'));
+        
+        $request_key = uniqid();
         
         try 
         {
@@ -176,15 +193,16 @@ class Freetime
             $lat_long = $this->get_geo_position();
             $bounding_box = $this->calculate_bounding_box($lat_long['lat'], $lat_long['long']);
             $request_sections = $this->get_request_sections();
+            $this->log_request($request_key, $userid, $request_sections, $lat_long['lat'], $lat_long['long'], $totaltime);
             $queryparams = $this->get_query_params($totaltime, $request_sections);
             $request_xml = $this->create_request_xml($bounding_box, $queryparams);
             $result = $this->query_osm($request_xml);
             $processed = ResultProcessor::process_result($userid, $result, $lat_long, $request_sections, $totaltime);
-            $this->send_response($processed, true);
+            $this->send_response($processed, true, $request_key);
         }
         catch (Exception $ex)
         {
-            $this->send_response($ex->getMessage(), false);
+            $this->send_response($ex->getMessage(), false, $request_key);
         }
     }
 }

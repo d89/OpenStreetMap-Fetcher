@@ -1,20 +1,12 @@
 <?php
 header('content-type: text/html; charset=utf-8');
 require_once "config.php";
-require_once "Exceptions.php";
 
 class Rating
 {
-    const db_host = "localhost";
-    const db = "d0124838";
-    const db_user = "root";
-    const db_pw = "";
-    
-    private static $db = null;
-    
     private $response = array
     (
-        "message" => "Request could not be processed", 
+        "message" => "Die Bearbeitung der Anfrage ist fehlgeschlagen.", 
         "status_code" => false
     );    
     
@@ -25,7 +17,7 @@ class Rating
         $error = error_get_last();
         if ($error)
         {
-            $this->send_response("Internal Error: " . $error['message'], false);
+            $this->send_response("Interner Fehler: " . $error['message'], false);
         }
     }
         
@@ -45,36 +37,15 @@ class Rating
         die(json_encode($this->response));
     }   
     
-    private static function connect()
-    {
-        if (!is_null(self::$db))
-            return self::$db;
-        
-        try 
-        {
-            $db = new PDO("mysql:host=".self::db_host.";dbname=".self::db, self::db_user, self::db_pw);
-            $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            $db->query( "set character set utf8" );
-            $db->query( "set names utf8" );
-            
-            self::$db = $db;
-            return self::$db;
-        }
-        catch (PDOException $ex)
-        {
-            throw new Exception("Could not connect to database: " . $ex->getMessage());
-        }
-    }
-    
     private function enter_rating($db, $userid = null, $placeid = "", $rating = null)
     {
         $userid = trim($userid);
         if (strlen($userid) !== 32)
-            throw new Exception("Invalid User-ID");
+            throw new Exception("Ungueltige Benutzer-ID.");
         
         $placeid = intval($placeid);
         if ($placeid <= 0)
-            throw new Exception("Invalid Place-ID");
+            throw new Exception("Ungueltige OSM-ID.");
         
         $rating = intval($rating) == 1;
   
@@ -84,12 +55,12 @@ class Rating
         $res = $stmnt->execute($vals);
         
         if (!$res)
-            throw new Exception("Could not insert rating into database");
+            throw new Exception("Interner Fehler: Datenbankzugriff ist gescheitert.");
     }
     
     public static function get_ratings_for_user($userid)
     {
-        $db = self::connect();
+        $db = DB::get();
         
         $stmnt = $db->prepare('SELECT placeid, rating FROM `rating` WHERE userid = ?');
 		$stmnt->execute(array($userid));
@@ -109,7 +80,7 @@ class Rating
         
         try 
         {
-            $db = self::connect();
+            $db = DB::get();
             $this->enter_rating($db, $_GET['userid'], $_GET['placeid'], $_GET['rating']);
             $this->send_response("Successfull", true);
         }

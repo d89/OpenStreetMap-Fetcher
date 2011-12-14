@@ -3,7 +3,7 @@ header('content-type: text/html; charset=utf-8');
 
 $request = array
 (
-    "userid" => sha1(""),
+    "userid" => md5(""),
     "placeid" => 453144561,
     "rating" => 1
 );

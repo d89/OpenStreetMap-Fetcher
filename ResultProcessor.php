@@ -1,7 +1,6 @@
 <?php
 require_once "config.php";
 require_once "Rating.php";
-require_once "Exceptions.php";
 
 //------------------------------------------------------------------------------
         
@@ -32,6 +31,7 @@ class ResultProcessor
                 "osm_key" => "amenity",
                 "max_amount" => 9,
                 "name_required" => true,
+                "request" => "Gehe in die Kneipe",
                 "can_visit" => function() { return true; }
             ),
             "bar" => array
@@ -41,6 +41,7 @@ class ResultProcessor
                 "osm_key" => "amenity",
                 "max_amount" => 9,
                 "name_required" => true,
+                "request" => "Gehe in die Bar",
                 "can_visit" => function() { return true; }
             ),
             "nightclub" => array
@@ -50,6 +51,7 @@ class ResultProcessor
                 "osm_key" => "amenity",
                 "max_amount" => 3,
                 "name_required" => true,
+                "request" => "Gehe in den Club",
                 "can_visit" => function() { return date("H") > 20 || date("H") < 08; }
             ),
             "stripclub" => array
@@ -59,6 +61,7 @@ class ResultProcessor
                 "osm_key" => "amenity",
                 "max_amount" => 3,
                 "name_required" => true,
+                "request" => "Gehe in den Stripclub",
                 "can_visit" => function() { return true; }
             ),
             "fuel" => array
@@ -67,7 +70,8 @@ class ResultProcessor
                 "time" => 15,
                 "osm_key" => "amenity",
                 "max_amount" => 2,
-                "name_required" => false,
+                "name_required" => "Tankstelle",
+                "request" => "Betrete die Tankstelle",
                 "can_visit" => function() { return true; }
             ),
             //------------------------------------------------------------------
@@ -78,25 +82,8 @@ class ResultProcessor
                 "osm_key" => "amenity",
                 "max_amount" => 3,
                 "name_required" => true,
+                "request" => "Gehe in das Kino",
                 "can_visit" => function() { return date("H") >= 12 || date("H") <= 02; }
-            ),
-            "pub" => array
-            (
-                'section' => array(self::SECTION_PARTY, self::SECTION_FUN, self::SECTION_DATE),
-                "time" => 90,
-                "osm_key" => "amenity",
-                "max_amount" => 9,
-                "name_required" => true,
-                "can_visit" => function() { return true; }
-            ),
-            "bar" => array
-            (
-                'section' => array(self::SECTION_PARTY, self::SECTION_FUN, self::SECTION_DATE),
-                "time" => 90,
-                "osm_key" => "amenity",
-                "max_amount" => 9,
-                "name_required" => true,
-                "can_visit" => function() { return true; }
             ),
             "cafe" => array
             (
@@ -105,6 +92,7 @@ class ResultProcessor
                 "osm_key" => "amenity",
                 "max_amount" => 6,
                 "name_required" => true,
+                "request" => "Gehe in das Café",
                 "can_visit" => function() { return date("H") >= 06; }
             ),
             "biergarten" => array
@@ -114,6 +102,7 @@ class ResultProcessor
                 "osm_key" => "amenity",
                 "max_amount" => 6,
                 "name_required" => true,
+                "request" => "Gehe in den Biergarten",
                 "can_visit" => function() { return (date("H") >= 09 || date("H") <= 01) && (date("n") >= 5 && date("n") <= 9); }
             ),
             "ice_cream" => array
@@ -123,16 +112,8 @@ class ResultProcessor
                 "osm_key" => "amenity",
                 "max_amount" => 3,
                 "name_required" => true,
+                "request" => "Gehe in die Eisdiele",
                 "can_visit" => function() { return date("H") > 06; }
-            ),
-            "shelter" => array
-            (
-                'section' => array(self::SECTION_FUN, self::SECTION_DATE),
-                "time" => 15,
-                "osm_key" => "amenity",
-                "max_amount" => 6,
-                "name_required" => false,
-                "can_visit" => function() { return true; }
             ),
             "park" => array
             (
@@ -140,7 +121,8 @@ class ResultProcessor
                 "time" => 30,
                 "osm_key" => "leisure",
                 "max_amount" => 3,
-                "name_required" => false,
+                "name_required" => "Park",
+                "request" => "Gehe in den Park",
                 "can_visit" => function() { return true; }
             ),
             "common" => array
@@ -149,7 +131,8 @@ class ResultProcessor
                 "time" => 30,
                 "osm_key" => "leisure",
                 "max_amount" => 3,
-                "name_required" => false,
+                "name_required" => "Grünanlage",
+                "request" => "Besuche die Grünanlage",
                 "can_visit" => function() { return true; }
             ),
             "zoo" => array
@@ -159,6 +142,7 @@ class ResultProcessor
                 "osm_key" => "tourism",
                 "max_amount" => 3,
                 "name_required" => true,
+                "request" => "Gehe in den Zoo",
                 "can_visit" => function() { return date("H") >= 08; }
             ),
             //------------------------------------------------------------------
@@ -168,7 +152,8 @@ class ResultProcessor
                 "time" => 60,
                 "osm_key" => "sport",
                 "max_amount" => 3,
-                "name_required" => true,
+                "name_required" => "Kegelanlage",
+                "request" => "Spiele eine Runde in der Kegelanlage",
                 "can_visit" => function() { return true; }
             ),
             "10pin" => array
@@ -177,7 +162,8 @@ class ResultProcessor
                 "time" => 60,
                 "osm_key" => "sport",
                 "max_amount" => 3,
-                "name_required" => true,
+                "name_required" => "Bowlinganlage",
+                "request" => "Spiele eine Runde in der Bowlinganlage",
                 "can_visit" => function() { return true; }
             ),
             "boules" => array
@@ -186,7 +172,8 @@ class ResultProcessor
                 "time" => 60,
                 "osm_key" => "sport",
                 "max_amount" => 3,
-                "name_required" => false,
+                "name_required" => "Bouleanlage",
+                "request" => "Spiele eine Runde in der Bouleanlage",
                 "can_visit" => function() { return true; }
             ),
             "archery" => array
@@ -196,6 +183,7 @@ class ResultProcessor
                 "osm_key" => "sport",
                 "max_amount" => 3,
                 "name_required" => true,
+                "request" => "Besuche den Schießstand",
                 "can_visit" => function() { return true; }
             ),
             "badminton" => array
@@ -204,7 +192,8 @@ class ResultProcessor
                 "time" => 60,
                 "osm_key" => "sport",
                 "max_amount" => 3,
-                "name_required" => true,
+                "name_required" => "Badmintonfeld",
+                "request" => "Spiele eine Runde auf dem Badmintonfeld",
                 "can_visit" => function() { return true; }
             ),
             "basketball" => array
@@ -213,7 +202,8 @@ class ResultProcessor
                 "time" => 60,
                 "osm_key" => "sport",
                 "max_amount" => 3,
-                "name_required" => false,
+                "name_required" => "Basketballplatz",
+                "request" => "Spiele eine Runde auf dem Basketballplatz",
                 "can_visit" => function() { return true; }
             ),
             "beachvolleyball" => array
@@ -222,7 +212,8 @@ class ResultProcessor
                 "time" => 60,
                 "osm_key" => "sport",
                 "max_amount" => 3,
-                "name_required" => false,
+                "name_required" => "Beachvolleyballfeld",
+                "request" => "Spiele eine Runde auf dem Beachvolleyballfeld",
                 "can_visit" => function() { return true; }
             ),
             "climbing" => array
@@ -231,7 +222,8 @@ class ResultProcessor
                 "time" => 60,
                 "osm_key" => "sport",
                 "max_amount" => 3,
-                "name_required" => true,
+                "name_required" => "Kletteranlage",
+                "request" => "Besuche die Kletteranlage",
                 "can_visit" => function() { return true; }
             ),
             "golf" => array
@@ -240,7 +232,8 @@ class ResultProcessor
                 "time" => 90,
                 "osm_key" => "sport",
                 "max_amount" => 3,
-                "name_required" => true,
+                "name_required" => "Golfplatz",
+                "request" => "Spiele eine Runde auf dem Golfplatz",
                 "can_visit" => function() { return true; }
             ),
             "shooting" => array
@@ -249,7 +242,8 @@ class ResultProcessor
                 "time" => 60,
                 "osm_key" => "sport",
                 "max_amount" => 3,
-                "name_required" => true,
+                "name_required" => "Schießstand",
+                "request" => "Besuche den Schießstand",
                 "can_visit" => function() { return true; }
             ),
             "soccer" => array
@@ -258,7 +252,8 @@ class ResultProcessor
                 "time" => 90,
                 "osm_key" => "sport",
                 "max_amount" => 3,
-                "name_required" => false,
+                "name_required" => "Fußballplatz",
+                "request" => "Spiele eine Runde auf dem Fußballplatz",
                 "can_visit" => function() { return true; }
             ),
             "swimming" => array
@@ -267,7 +262,8 @@ class ResultProcessor
                 "time" => 90,
                 "osm_key" => "sport",
                 "max_amount" => 3,
-                "name_required" => true,
+                "name_required" => "Schwimmbad",
+                "request" => "Besuche das Schwimmbad",
                 "can_visit" => function() { return true; }
             ),
             "volleyball" => array
@@ -276,7 +272,8 @@ class ResultProcessor
                 "time" => 60,
                 "osm_key" => "sport",
                 "max_amount" => 3,
-                "name_required" => true,
+                "name_required" => "Volleyballfeld",
+                "request" => "Spiele eine Runde auf dem Volleyballfeld",
                 "can_visit" => function() { return true; }
             ),
             "tennis" => array
@@ -285,7 +282,8 @@ class ResultProcessor
                 "time" => 60,
                 "osm_key" => "sport",
                 "max_amount" => 3,
-                "name_required" => true,
+                "name_required" => "Tennisplatz",
+                "request" => "Spiele eine Runde auf dem Tennisplatz",
                 "can_visit" => function() { return true; }
             ),
             "water_park" => array
@@ -294,7 +292,8 @@ class ResultProcessor
                 "time" => 120,
                 "osm_key" => "leisure",
                 "max_amount" => 3,
-                "name_required" => true,
+                "name_required" => "Wasserpark",
+                "request" => "Besuche den Wasserpark",
                 "can_visit" => function() { return true; }
             ),
             "miniature_golf" => array
@@ -303,17 +302,19 @@ class ResultProcessor
                 "time" => 60,
                 "osm_key" => "leisure",
                 "max_amount" => 3,
-                "name_required" => true,
+                "name_required" => "Minigolfanlage",
+                "request" => "Spiele eine Runde auf der Minigolfanlage",
                 "can_visit" => function() { return true; }
             ),
             //------------------------------------------------------------------
             "fountain" => array
             (
-                'section' => array(self::SECTION_SIGHTSEEING),
+                'section' => array(self::SECTION_SIGHTSEEING, self::SECTION_SIGHTSEEING),
                 "time" => 15,
                 "osm_key" => "amenity",
                 "max_amount" => 6,
-                "name_required" => true,
+                "name_required" => "Wasseranlage",
+                "request" => "Besichtige die Wasseranlage",
                 "can_visit" => function() { return true; }
             ),
             "marketplace" => array
@@ -323,6 +324,7 @@ class ResultProcessor
                 "osm_key" => "amenity",
                 "max_amount" => 3,
                 "name_required" => true,
+                "request" => "Gehe auf den Marktplatz",
                 "can_visit" => function() { return true; }
             ),
             "place_of_worship" => array
@@ -332,6 +334,7 @@ class ResultProcessor
                 "osm_key" => "amenity",
                 "max_amount" => 9,
                 "name_required" => true,
+                "request" => "Besichtige die Sehenswürdigkeit",
                 "can_visit" => function() { return true; }
             ),
             "castle" => array
@@ -341,6 +344,7 @@ class ResultProcessor
                 "osm_key" => "historic",
                 "max_amount" => 3,
                 "name_required" => true,
+                "request" => "Besichtige die Burg",
                 "can_visit" => function() { return true; }
             ),
             "memorial" => array
@@ -350,6 +354,7 @@ class ResultProcessor
                 "osm_key" => "historic",
                 "max_amount" => 9,
                 "name_required" => true,
+                "request" => "Besichtige die Sehenswürdigkeit",
                 "can_visit" => function() { return true; }
             ),
             "monument" => array
@@ -359,6 +364,7 @@ class ResultProcessor
                 "osm_key" => "historic",
                 "max_amount" => 9,
                 "name_required" => true,
+                "request" => "Besichtige das Monument",
                 "can_visit" => function() { return true; }
             ),
             "ruins" => array
@@ -368,6 +374,7 @@ class ResultProcessor
                 "osm_key" => "historic",
                 "max_amount" => 3,
                 "name_required" => true,
+                "request" => "Besichtige die Ruine",
                 "can_visit" => function() { return true; }
             ),
             "attraction" => array
@@ -377,6 +384,7 @@ class ResultProcessor
                 "osm_key" => "tourism",
                 "max_amount" => 9,
                 "name_required" => true,
+                "request" => "Besichtige die Attraktion",
                 "can_visit" => function() { return true; }
             ),
             "information" => array
@@ -386,61 +394,18 @@ class ResultProcessor
                 "osm_key" => "tourism",
                 "max_amount" => 3,
                 "name_required" => true,
+                "request" => "Besuche die Touristeninformation",
                 "can_visit" => function() { return true; }
             ),
             //------------------------------------------------------------------
-            "pub" => array
-            (
-                'section' => array(self::SECTION_PARTY, self::SECTION_FUN, self::SECTION_DATE),
-                "time" => 60,
-                "osm_key" => "amenity",
-                "max_amount" => 6,
-                "name_required" => true,
-                "can_visit" => function() { return true; }
-            ),
-            "bar" => array
-            (
-                'section' => array(self::SECTION_PARTY, self::SECTION_FUN, self::SECTION_DATE),
-                "time" => 60,
-                "osm_key" => "amenity",
-                "max_amount" => 6,
-                "name_required" => true,
-                "can_visit" => function() { return true; }
-            ),
-            "cafe" => array
-            (
-                'section' => array(self::SECTION_FUN, self::SECTION_DATE),
-                "time" => 60,
-                "osm_key" => "amenity",
-                "max_amount" => 6,
-                "name_required" => true,
-                "can_visit" => function() { return date("H") >= 06; }
-            ),
-            "ice_cream" => array
-            (
-                'section' => array(self::SECTION_FUN, self::SECTION_DATE),
-                "time" => 60,
-                "osm_key" => "amenity",
-                "max_amount" => 3,
-                "name_required" => true,
-                "can_visit" => function() { return date("H") >= 06; }
-            ),
-            "fountain" => array
-            (
-                'section' => array(self::SECTION_DATE),
-                "time" => 30,
-                "osm_key" => "amenity",
-                "max_amount" => 6,
-                "name_required" => false,
-                "can_visit" => function() { return true; }
-            ),
             "bench" => array
             (
                 'section' => array(self::SECTION_DATE),
                 "time" => 30,
                 "osm_key" => "amenity",
                 "max_amount" => 2,
-                "name_required" => false,
+                "name_required" => "Sitzbank",
+                "request" => "Setze dich auf die Bank",
                 "can_visit" => function() { return true; }
             ),
             "shelter" => array
@@ -449,7 +414,8 @@ class ResultProcessor
                 "time" => 30,
                 "osm_key" => "amenity",
                 "max_amount" => 6,
-                "name_required" => false,
+                "name_required" => "Unterstand",
+                "request" => "Gehe zum Unterstand",
                 "can_visit" => function() { return true; }
             ),
             "hunting_stand" => array
@@ -458,17 +424,9 @@ class ResultProcessor
                 "time" => 30,
                 "osm_key" => "amenity",
                 "max_amount" => 6,
-                "name_required" => false,
+                "name_required" => "Hochsitz",
+                "request" => "Gehe auf den Hochsitz",
                 "can_visit" => function() { return true; }
-            ),
-            "cinema" => array
-            (
-                'section' => array(self::SECTION_FUN, self::SECTION_DATE),
-                "time" => 120,
-                "osm_key" => "amenity",
-                "max_amount" => 3,
-                "name_required" => true,
-                "can_visit" => function() { return date("H") > 12 || date("H") < 02; }
             ),
             "lighthouse" => array
             (
@@ -476,7 +434,8 @@ class ResultProcessor
                 "time" => 30,
                 "osm_key" => "man_made",
                 "max_amount" => 3,
-                "name_required" => false,
+                "name_required" => "Leuchtturm",
+                "request" => "Gehe zu dem Leuchtturm",
                 "can_visit" => function() { return true; }
             ),
             "beach" => array
@@ -485,7 +444,8 @@ class ResultProcessor
                 "time" => 30,
                 "osm_key" => "natural",
                 "max_amount" => 3,
-                "name_required" => false,
+                "name_required" => "Strand",
+                "request" => "Gehe an den Strand",
                 "can_visit" => function() { return true; }
             ),
             //------------------------------------------------------------------
@@ -496,6 +456,7 @@ class ResultProcessor
                 "osm_key" => "building",
                 "max_amount" => 6,
                 "name_required" => true,
+                "request" => "Kaufe ein im Supermarkt",
                 "can_visit" => function() { return true; }
             ),
             "bakery" => array
@@ -505,15 +466,17 @@ class ResultProcessor
                 "osm_key" => "shop",
                 "max_amount" => 3,
                 "name_required" => true,
+                "request" => "Kauf ein in der Bäckerei",
                 "can_visit" => function() { return date("H") >= 06; }
             ),
             "beverages" => array
             (
                 'section' => array(self::SECTION_EINKAUFEN),
-                "time" => 15,
+                "time" => 30,
                 "osm_key" => "shop",
                 "max_amount" => 3,
                 "name_required" => true,
+                "request" => "Kaufe ein im Getränkemarkt",
                 "can_visit" => function() { return date("H") >= 06; }
             ),
             "butcher" => array
@@ -523,24 +486,27 @@ class ResultProcessor
                 "osm_key" => "shop",
                 "max_amount" => 3,
                 "name_required" => true,
+                "request" => "Kaufe ein beim Metzger",
                 "can_visit" => function() { return date("H") >= 06; }
             ),
             "chemist" => array
             (
                 'section' => array(self::SECTION_EINKAUFEN),
-                "time" => 15,
+                "time" => 30,
                 "osm_key" => "shop",
                 "max_amount" => 3,
                 "name_required" => true,
+                "request" => "Kaufe ein in der Drogerie",
                 "can_visit" => function() { return date("H") >= 06; }
             ),
             "department_store" => array
             (
                 'section' => array(self::SECTION_EINKAUFEN),
-                "time" => 15,
+                "time" => 45,
                 "osm_key" => "shop",
                 "max_amount" => 3,
                 "name_required" => true,
+                "request" => "Kaufe ein im Kaufhaus",
                 "can_visit" => function() { return date("H") >= 06; }
             ),
             "greengrocer" => array
@@ -550,6 +516,7 @@ class ResultProcessor
                 "osm_key" => "shop",
                 "max_amount" => 3,
                 "name_required" => true,
+                "request" => "Kaufe ein im Gemüseladen",
                 "can_visit" => function() { return date("H") >= 06; }
             ),
             "organic" => array
@@ -559,18 +526,10 @@ class ResultProcessor
                 "osm_key" => "shop",
                 "max_amount" => 3,
                 "name_required" => true,
+                "request" => "Kaufe ein im Bio-Laden",
                 "can_visit" => function() { return date("H") >= 06; }
             ),
             //------------------------------------------------------------------
-            "biergarten" => array
-            (
-                'section' => array(self::SECTION_FUN, self::SECTION_DATE),
-                "time" => 60,
-                "osm_key" => "amenity",
-                "max_amount" => 6,
-                "name_required" => true,
-                "can_visit" => function() { return (date("H") >= 09 || date("H") <= 01) && (date("n") >= 5 && date("n") <= 9); }
-            ),
             "fast_food" => array
             (
                 'section' => array(self::SECTION_MAHLZEIT),
@@ -578,6 +537,7 @@ class ResultProcessor
                 "osm_key" => "amenity",
                 "max_amount" => 6,
                 "name_required" => true,
+                "request" => "Esse etwas bei",
                 "can_visit" => function() { return true; }
             ),
             "food_court" => array
@@ -586,7 +546,8 @@ class ResultProcessor
                 "time" => 30,
                 "osm_key" => "amenity",
                 "max_amount" => 6,
-                "name_required" => false,
+                "name_required" => "Räumlichkeit",
+                "request" => "Gehe in die Räumlichkeit",
                 "can_visit" => function() { return true; }
             ),
             "bbq" => array
@@ -595,7 +556,8 @@ class ResultProcessor
                 "time" => 60,
                 "osm_key" => "amenity",
                 "max_amount" => 3,
-                "name_required" => true,
+                "name_required" => "BBQ",
+                "request" => "Gehe zum BBQ",
                 "can_visit" => function() { return true; }
             ),
             "restaurant" => array
@@ -605,6 +567,7 @@ class ResultProcessor
                 "osm_key" => "amenity",
                 "max_amount" => 3,
                 "name_required" => true,
+                "request" => "Gehe in das Restaurant",
                 "can_visit" => function() { return date("H") >= 08; }
             ),
             //------------------------------------------------------------------
@@ -615,6 +578,7 @@ class ResultProcessor
                 "osm_key" => "amenity",
                 "max_amount" => 3,
                 "name_required" => true,
+                "request" => "Gehe in das Theater",
                 "can_visit" => function() { return date("H") >= 09 || date("H") <= 01; }
             ),
             "artwork" => array
@@ -624,6 +588,7 @@ class ResultProcessor
                 "osm_key" => "amenity",
                 "max_amount" => 9,
                 "name_required" => true,
+                "request" => "Besichtige das Kunstwerk",
                 "can_visit" => function() { return true; }
             ),
             "museum" => array
@@ -633,10 +598,11 @@ class ResultProcessor
                 "osm_key" => "amenity",
                 "max_amount" => 6,
                 "name_required" => true,
+                "request" => "Besuche das Museum",
                 "can_visit" => function() { return date("H") >= 08; }
             ),
         );
-                
+
         return $section_map;
     }
         
@@ -648,7 +614,7 @@ class ResultProcessor
     public static function process_result($userid, $result, array $lat_long, array $request_sections, $totaltime)
     {
         if (empty($result))
-            throw new OSMResponseError("The OSM Response was empty");
+            throw new OSMResponseError("Es gibt leider keine Ergebnisse fuer Ihre Suche.");
         
         //dont output the errors
         libxml_use_internal_errors(true);
@@ -656,10 +622,10 @@ class ResultProcessor
         $converting_error = count(libxml_get_errors()) !== 0;
         
         if ($converting_error)
-            throw new OSMResponseError("Malformatted XML in Response of OSM");
+            throw new OSMResponseError("Die Anfrage konnte leider aufgrund eines Fehlers bei OpenStreetMap nicht verarbeitet werden.");
         
         if (!count($resp->node))
-            throw new OSMResponseError("The OSM Response was empty");
+            throw new OSMResponseError("Es gibt leider keine Ergebnisse fuer Ihre Suche. Bitte versuchen Sie eine andere Auswahl.");
         
         $tag_mapping = array
         (
@@ -687,7 +653,7 @@ class ResultProcessor
             $ratings = Rating::get_ratings_for_user($userid);
         
         $section_map = self::get_section_map();
-        
+     
         $locations = array();
 
         foreach ($resp->node as $n)
@@ -767,9 +733,16 @@ class ResultProcessor
             
             $place = $location['place']; //e.g. restaurant
             
-            //if the name is not required and we don't have one, take the place ("table_tennis")
-            if (empty($location['name']) && !$section_map[$place]['name_required'])
-                $location['name'] = $place;
+            //if we have an own name, append it to the request -> 'Gehe in die Grünanlage "Herrengarten"'
+            //and only if we have the name! If we take the translation replacement, it would sound dump! -> 'Gehe in die Grünanlage "Grünanlage"'
+            if (!empty($location['name']))
+                $location['request'] = sprintf($section_map[$place]['request'] . " '%s'", $location['name']);
+            else
+                $location['request'] = $section_map[$place]['request'];
+            
+            //if the name is not required and we don't have one, take the translation from name_required ("Bank", ...)
+            if (empty($location['name']) && $section_map[$place]['name_required'] !== true)
+                $location['name'] = $section_map[$place]['name_required'];
 
             //no name? worthless for us
             if (empty($location['name']))
