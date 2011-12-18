@@ -3,6 +3,15 @@ header('content-type: text/html; charset=utf-8');
 require_once "config.php";
 
 $db = DB::get();
+
+if (!empty($_GET['detail']))
+{
+    $stmnt = $db->prepare('SELECT message FROM `history` WHERE requestkey = ?');
+    $stmnt->execute(array($_GET['detail']));
+    $res = $stmnt->fetchAll(PDO::FETCH_ASSOC);
+    die(nl2br(htmlspecialchars($res[0]['message'], ENT_COMPAT, "UTF-8")));
+}
+
 $stmnt = $db->prepare('SELECT * FROM `history` ORDER BY `time` DESC');
 $stmnt->execute();
 ?>
@@ -32,10 +41,26 @@ $stmnt->execute();
 <script>
     $(document).ready(function()
     {
-        $("a").click(function()
+        $("a.showtext").click(function()
         {
-            var el = $("#longid" + $(this).attr("id"));
-            el.slideToggle();
+            var id =  $(this).attr("id"),
+                textelem = $('#longtext' + id),
+                link = $(this);
+            
+            if (textelem.is(":visible"))
+            {
+                textelem.html("").hide();
+                link.text("Inhalt anzeigen");
+            }
+            else
+            {
+                link.text("Inhalt lädt....");
+                
+                $.get('stalker.php?detail=' + id, function(data) {
+                    textelem.show().html(data);
+                    link.text("Inhalt ausblenden");
+                });
+            }
         });
     });
 </script>
@@ -51,12 +76,8 @@ $stmnt->execute();
         <th>message</th>
     </tr>
 <?php
-$id = 0;
-
 while ($row = $stmnt->fetch(PDO::FETCH_ASSOC))
 {
-    $id++;
-    
     ?>
     <tr>
         <td><?php echo $row['time']; ?></td>
@@ -66,19 +87,8 @@ while ($row = $stmnt->fetch(PDO::FETCH_ASSOC))
         <td><?php echo $row['totaltime']; ?></td>
         <td><?php echo $row['successfull']; ?></td>
         <td>
-            <?php 
-            if (strlen($row['message']) > 400)
-            {
-            ?>
-                <a id="<?php echo $id; ?>" class="showtext"><?php echo strlen($row['message']); ?> Zeichen anzeigen</a>
-                <div id="longid<?php echo $id; ?>" class="toolong">
-                    <?php echo nl2br($row['message']); ?>
-                </div>
-            <?php
-            }
-            else
-                echo $row['message']; 
-            ?>
+             <a id="<?php echo $row['requestkey']; ?>" class="showtext">Inhalt anzeigen</a>
+             <div style="display:none" id="longtext<?php echo $row['requestkey']; ?>"></div>
         </td>
     </tr>
     <?php

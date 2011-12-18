@@ -629,21 +629,17 @@ class ResultProcessor
         
         $tag_mapping = array
         (
-            'addr:city' => 'city',
-            'addr:housenumber' => 'number',
-            'addr:postcode' => 'zip',
-            'addr:street' => 'street',
-            'name' => 'name',
-            'note' => 'info',
-            'smoking' => 'smoking',
+            'addr:street' => 'Straße',
+            'addr:housenumber' => 'Hausnr.',
+            'note' => 'Infotext',
+            'smoking' => 'Rauchen',
             'website' => 'website',
             'contact:website' => 'website',
-            'wheelchair' => 'wheelchair',
-            'addr:country' => 'country',
-            'cuisine' => 'cuisine',
-            'opening_hours' => 'opening_hours',
-            'phone' => 'phone',
-            'contact:phone' => 'phone'
+            'wheelchair' => 'Rollstuhlgeeignet',
+            'cuisine' => 'Küche',
+            'opening_hours' => 'Öffnungszeiten',
+            'phone' => 'Tel.',
+            'contact:phone' => 'Tel.'
         );
         
         //get the ratings
@@ -664,11 +660,13 @@ class ResultProcessor
             
             $location = array
             (
+                "city" => null, //will be filled later
+                "name" => null, //will be filled later
+                "infotext" => array(), //will be filled later
                 "id" => intval($n->attributes()->id),
                 "lat" => $lat,
                 "long" => $long,
                 "dist" => $dist,
-                'additional' => array(),
                 "preselect" => false,
                 'section' => null, //e.g. food
                 "place" => null //e.g. restaurant
@@ -687,9 +685,6 @@ class ResultProcessor
                 else
                     $order_key *= 3;
             }
-
-            foreach (array_unique(array_values($tag_mapping)) as $tag)
-                $location[$tag] = null;
 
             foreach ($n->tag as $t)
             {
@@ -721,11 +716,24 @@ class ResultProcessor
                 if ($continue)
                     continue;
                 
-                if (isset($tag_mapping[$key]))
-                    $location[$tag_mapping[$key]] = $val;
-                else
-                    $location['additional'][$key] = $val;
+                switch ($key)
+                {
+                    case "addr:city":
+                        $location['city'] = $val;
+                        break;
+                    case "name":
+                        $location['name'] = $val;
+                        break;
+                    default:
+                        if (isset($tag_mapping[$key]))
+                            $location["infotext"][] = $tag_mapping[$key] . ": " . $val;
+                }
             }
+            
+            $location["infotext"] = implode("; ", $location["infotext"]);
+            
+            if (empty($location["infotext"]))
+                $location["infotext"] = null;
             
             //still no section / place: skip!
             if (empty($location['section']) || empty($location['place']))

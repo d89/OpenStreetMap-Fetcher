@@ -11,7 +11,7 @@ $request = array
     "long" => 8.641756,
     "action" => implode(",", $sections),
     "userid" => md5(""),
-    "totaltime" => 10
+    "totaltime" => 210
 );
 
 echo "<h1>Request</h1>";
